@@ -88,6 +88,13 @@
 	<string>${MACOSX_DEPLOYMENT_TARGET}.0</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<!-- M1 build: opt out of App Nap. Without this macOS throttles timers and
+	     network callbacks when the window is not focused, which makes transfers
+	     and the UI look "frozen" in the background. -->
+	<key>NSAppSleepDisabled</key>
+	<true/>
+	<key>NSDisableAutomaticTermination</key>
+	<true/>
 	<key>NSAppleScriptEnabled</key>
 	<string>YES</string>
 	<key>NSHumanReadableCopyright</key>
