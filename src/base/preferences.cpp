@@ -440,7 +440,10 @@ void Preferences::setSplashScreenDisabled(const bool b)
 // Preventing from system suspend while active torrents are presented.
 bool Preferences::preventFromSuspendWhenDownloading() const
 {
-    return value(u"Preferences/General/PreventFromSuspendWhenDownloading"_s, false);
+    // M1 build: the whole point of a download client is to keep downloading.
+    // Upstream defaults to false, so the Mac happily sleeps mid-torrent and the
+    // transfer dies; the IOPMAssertion in InhibitorMacOS is never requested.
+    return value(u"Preferences/General/PreventFromSuspendWhenDownloading"_s, true);
 }
 
 void Preferences::setPreventFromSuspendWhenDownloading(const bool b)
@@ -453,7 +456,8 @@ void Preferences::setPreventFromSuspendWhenDownloading(const bool b)
 
 bool Preferences::preventFromSuspendWhenSeeding() const
 {
-    return value(u"Preferences/General/PreventFromSuspendWhenSeeding"_s, false);
+    // M1 build: same reasoning as above, but for seeding.
+    return value(u"Preferences/General/PreventFromSuspendWhenSeeding"_s, true);
 }
 
 void Preferences::setPreventFromSuspendWhenSeeding(const bool b)

@@ -12,6 +12,7 @@ before using it for anything important.
 | Background | `NSAppSleepDisabled` + `NSDisableAutomaticTermination` in `dist/mac/Info.plist`, so App Nap stops throttling timers and network callbacks |
 | Sleep / network change | `ReannounceWhenAddressChanged` default flipped to `true`; after sleep or a Wi-Fi/ethernet switch the external address changes and libtorrent otherwise keeps announcing the stale one |
 | Disk I/O | `AsyncIOThreadsCount` 10 → 16, `CoalesceReadWrite` also on macOS, `PieceExtentAffinity` enabled |
+| Sleep assertion | `PreventFromSuspendWhenDownloading/WhenSeeding` default to `true`, and the re-check interval dropped from 60 s to 5 s — the IOPMAssertion is now held seconds after a torrent starts |
 
 ## Building
 
@@ -62,6 +63,35 @@ Notes:
 - Startup is 0.1 s slower than the official 5.2.3 binary, which is built with a
   different Qt release; comparing against the same code compiled without the
   flags (0.58 s → 0.46 s, 115 MB → 71 MB) is the meaningful delta.
+
+## UI with a large list
+
+Synthetic torrents (valid bencode, no peers), profile pre-filled, then a clean
+startup and 12–15 s of idle sampling:
+
+| Build | Torrents | Startup | Idle CPU | RSS |
+| --- | --- | --- | --- | --- |
+| This build | 0 | 0.54 s | 0.6 % | 120 MB |
+| This build | 300 | 0.43 s | 0.1 % | 132 MB |
+| This build | 2000 | 0.43 s | 0.0 % | 118 MB |
+| This build | 2000 + active download | 0.43 s | 35.9 % | 146 MB |
+| Official 5.2.3 | 2000 + active download | 0.43 s | 39.8 % | 328 MB |
+
+A 2000-row list costs essentially nothing when idle, and during an active
+download the client is cheaper on both CPU and memory than 5.2.3. No list-update
+throttling patch was needed: `TransferListModel::handleTorrentsUpdated` already
+collapses updates when more than half the list changed, and the measurements do
+not show a list-bound cost.
+
+## Sleep assertion, verified
+
+`pmset -g assertions` while downloading the test torrent, 15 s after launch:
+
+```
+pid <pid>(qbittorrent): NoIdleSleepAssertion named: "PMMacOS"
+```
+
+The official 5.2.3 build holds no assertion at all during the same download.
 
 ## Packaging
 

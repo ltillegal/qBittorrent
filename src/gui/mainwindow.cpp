@@ -125,7 +125,10 @@ namespace
 #define SETTINGS_KEY(name) u"GUI/" name
 #define EXECUTIONLOG_SETTINGS_KEY(name) (SETTINGS_KEY(u"Log/"_s) name)
 
-    const std::chrono::seconds PREVENT_SUSPEND_INTERVAL {60};
+    // M1 build: upstream re-checks every 60 s, so up to a minute passes between
+    // a torrent starting and the IOPMAssertion being held — easy to hit "the Mac
+    // went to sleep mid-download". 5 s is cheap: it only walks the torrent list.
+    const std::chrono::seconds PREVENT_SUSPEND_INTERVAL {5};
 
 #if defined(Q_OS_WIN)
 #if defined(Q_PROCESSOR_X86_64)
