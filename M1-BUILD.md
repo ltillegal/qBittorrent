@@ -42,7 +42,33 @@ Two traps:
    "$(brew --prefix qt)/bin/macdeployqt" build/qbittorrent.app -always-overwrite -libpath="$(brew --prefix)/lib"
    ```
 
-## Measurements
+## Clean A/B: same version, same toolchain
+
+The 5.2.3 tag does **not** build against Homebrew's libtorrent 2.1.2 —
+`storage_params::mapped_files` was removed in 2.1, so `customstorage.cpp` fails.
+The honest comparison is therefore unmodified 5.3.0 vs this build, both compiled
+here with the same Qt/libtorrent/compiler. The installed 5.2.3 binary is kept as
+an external reference only.
+
+| Build | Startup | RSS idle | Download | RSS during download | Sleep assertion |
+| --- | --- | --- | --- | --- | --- |
+| 5.3.0, unmodified, no flags | 0.45 s | 79 MB | 39.0 MB/s | 174–178 MB | none |
+| 5.3.0, this build (LTO + patches) | 0.46 s | 71 MB | 35.9 MB/s | 171–177 MB | yes, ~9 s after start |
+| Official 5.2.3 (external reference) | 0.36 s | 57 MB | 32.4 MB/s | 628–745 MB | none |
+
+Reading these numbers honestly:
+
+- Throughput is the same within noise (~36–39 MB/s on both). The link is the
+  bottleneck; nothing in the tuning makes downloads faster, and nothing makes
+  them slower either.
+- Startup is the same. LTO and `-mcpu=apple-m1` buy ~8 MB of RSS here, not speed.
+- The 4× lower RSS seen against 5.2.3 comes from the 5.3.0 codebase, not from
+  the patches.
+- The real wins are functional, not numeric: the app no longer gets App Napped
+  into silence, it holds a sleep assertion while transferring, and it
+  re-announces after the external address changes.
+
+## Measurements (earlier, vs installed 5.2.3)
 
 Same machine, fresh profile per run, Ubuntu 24.04.3 ISO torrent (legal, well
 seeded), 3 samples of the startup and 2 interleaved rounds of the download test
